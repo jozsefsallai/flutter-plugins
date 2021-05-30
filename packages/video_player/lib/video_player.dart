@@ -60,7 +60,7 @@ class VideoPlayerValue {
   /// The total duration of the video.
   ///
   /// Is null when [initialized] is false.
-  final Duration duration;
+  final Duration? duration;
 
   /// The start position when clipped.
   ///
@@ -93,12 +93,12 @@ class VideoPlayerValue {
   /// A description of the error if present.
   ///
   /// If [hasError] is false this is [null].
-  final String errorDescription;
+  final String? errorDescription;
 
   /// The [size] of the currently loaded video.
   ///
   /// Is null when [initialized] is false.
-  final Size size;
+  final Size? size;
 
   ///The Current speed of the playback.
   final double speed;
@@ -107,21 +107,21 @@ class VideoPlayerValue {
 
   bool get hasError => errorDescription != null;
 
-  double get aspectRatio => size != null ? size.width / size.height : 1.0;
+  double get aspectRatio => size != null ? size!.width / size!.height : 1.0;
 
   VideoPlayerValue copyWith({
-    Duration duration,
-    Size size,
-    Duration position,
-    Duration startPosition,
-    Duration endPosition,
-    List<DurationRange> buffered,
-    bool isPlaying,
-    bool isLooping,
-    bool isBuffering,
-    double volume,
-    String errorDescription,
-    double speed,
+    Duration? duration,
+    Size? size,
+    Duration? position,
+    Duration? startPosition,
+    Duration? endPosition,
+    List<DurationRange>? buffered,
+    bool? isPlaying,
+    bool? isLooping,
+    bool? isBuffering,
+    double? volume,
+    String? errorDescription,
+    double? speed,
   }) {
     return VideoPlayerValue(
       duration: duration ?? this.duration,
@@ -214,20 +214,20 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         formatHint = null,
         super(VideoPlayerValue(duration: null));
 
-  int _textureId;
-  final String dataSource;
-  final VideoFormat formatHint;
+  late int _textureId;
+  final String? dataSource;
+  final VideoFormat? formatHint;
 
   /// Describes the type of data source this [VideoPlayerController]
   /// is constructed with.
   final DataSourceType dataSourceType;
 
-  final String package;
-  Timer _timer;
+  final String? package;
+  Timer? _timer;
   bool _isDisposed = false;
-  Completer<void> _creatingCompleter;
-  StreamSubscription<dynamic> _eventSubscription;
-  _VideoAppLifeCycleObserver _lifeCycleObserver;
+  Completer<void>? _creatingCompleter;
+  StreamSubscription<dynamic>? _eventSubscription;
+  late _VideoAppLifeCycleObserver _lifeCycleObserver;
 
   @visibleForTesting
   int get textureId => _textureId;
@@ -256,13 +256,13 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
         dataSourceDescription = <String, dynamic>{'uri': dataSource};
         break;
     }
-    final Map<String, dynamic> response =
+    final Map<String, dynamic>? response =
         await _channel.invokeMapMethod<String, dynamic>(
       'create',
       dataSourceDescription,
     );
-    _textureId = response['textureId'];
-    _creatingCompleter.complete(null);
+    _textureId = response!['textureId'];
+    _creatingCompleter!.complete(null);
     final Completer<void> initializingCompleter = Completer<void>();
 
     DurationRange toDurationRange(dynamic value) {
@@ -313,8 +313,9 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
 
     void errorListener(Object obj) {
-      final PlatformException e = obj;
-      value = VideoPlayerValue.erroneous(e.message);
+      // ignore: avoid_as
+      final PlatformException e = obj as PlatformException;
+      value = VideoPlayerValue.erroneous(e.message!);
       _timer?.cancel();
     }
 
@@ -331,7 +332,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   @override
   Future<void> dispose() async {
     if (_creatingCompleter != null) {
-      await _creatingCompleter.future;
+      await _creatingCompleter!.future;
       if (!_isDisposed) {
         _isDisposed = true;
         _timer?.cancel();
@@ -387,7 +388,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           if (_isDisposed) {
             return;
           }
-          final Duration newPosition = await position;
+          final Duration? newPosition = await position;
           if (_isDisposed) {
             return;
           }
@@ -417,15 +418,15 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   }
 
   /// The position in the current video.
-  Future<Duration> get position async {
+  Future<Duration?> get position async {
     if (_isDisposed) {
       return null;
     }
     return Duration(
-      milliseconds: await _channel.invokeMethod<int>(
+      milliseconds: (await _channel.invokeMethod<int>(
         'position',
         <String, dynamic>{'textureId': _textureId},
-      ),
+      ))!,
     );
   }
 
@@ -524,7 +525,7 @@ class _VideoAppLifeCycleObserver extends Object with WidgetsBindingObserver {
   final VideoPlayerController _controller;
 
   void initialize() {
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance?.addObserver(this);
   }
 
   @override
@@ -544,7 +545,7 @@ class _VideoAppLifeCycleObserver extends Object with WidgetsBindingObserver {
   }
 
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance?.removeObserver(this);
   }
 }
 
@@ -570,8 +571,8 @@ class _VideoPlayerState extends State<VideoPlayer> {
     };
   }
 
-  VoidCallback _listener;
-  int _textureId;
+  late VoidCallback _listener;
+  late int _textureId;
 
   @override
   void initState() {
@@ -585,7 +586,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
   @override
   void didUpdateWidget(VideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!oldWidget.controller._isDisposed) {
+    if (!oldWidget.controller.isDisposed) {
       oldWidget.controller.removeListener(_listener);
     }
     _textureId = widget.controller.textureId;
@@ -595,7 +596,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
   @override
   void deactivate() {
     super.deactivate();
-    if (!widget.controller._isDisposed) {
+    if (!widget.controller.isDisposed) {
       widget.controller.removeListener(_listener);
     }
   }
@@ -620,8 +621,8 @@ class VideoProgressColors {
 
 class _VideoScrubber extends StatefulWidget {
   _VideoScrubber({
-    @required this.child,
-    @required this.controller,
+    required this.child,
+    required this.controller,
   });
 
   final Widget child;
@@ -639,10 +640,11 @@ class _VideoScrubberState extends State<_VideoScrubber> {
   @override
   Widget build(BuildContext context) {
     void seekToRelativePosition(Offset globalPosition) {
-      final RenderBox box = context.findRenderObject();
-      final Offset tapPos = box.globalToLocal(globalPosition);
+      // ignore: avoid_as
+      final RenderBox? box = context.findRenderObject() as RenderBox;
+      final Offset tapPos = box!.globalToLocal(globalPosition);
       final double relative = tapPos.dx / box.size.width;
-      final Duration position = controller.value.duration * relative;
+      final Duration position = controller.value.duration! * relative;
       controller.seekTo(position);
     }
 
@@ -689,14 +691,14 @@ class _VideoScrubberState extends State<_VideoScrubber> {
 class VideoProgressIndicator extends StatefulWidget {
   VideoProgressIndicator(
     this.controller, {
-    VideoProgressColors colors,
+    VideoProgressColors? colors,
     this.allowScrubbing,
     this.padding = const EdgeInsets.only(top: 5.0),
   }) : colors = colors ?? VideoProgressColors();
 
   final VideoPlayerController controller;
   final VideoProgressColors colors;
-  final bool allowScrubbing;
+  final bool? allowScrubbing;
   final EdgeInsets padding;
 
   @override
@@ -713,7 +715,7 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
     };
   }
 
-  VoidCallback listener;
+  late VoidCallback listener;
 
   VideoPlayerController get controller => widget.controller;
 
@@ -735,7 +737,7 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
   Widget build(BuildContext context) {
     Widget progressIndicator;
     if (controller.value.initialized) {
-      final int duration = controller.value.duration.inMilliseconds;
+      final int duration = controller.value.duration!.inMilliseconds;
       final int position = controller.value.position.inMilliseconds;
 
       int maxBuffering = 0;
@@ -772,7 +774,9 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
       padding: widget.padding,
       child: progressIndicator,
     );
-    if (widget.allowScrubbing) {
+
+    final bool allowScrubbing = widget.allowScrubbing ?? false;
+    if (allowScrubbing) {
       return _VideoScrubber(
         child: paddedProgressIndicator,
         controller: controller,

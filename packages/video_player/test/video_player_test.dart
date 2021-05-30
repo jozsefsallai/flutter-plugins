@@ -20,14 +20,14 @@ class FakeController extends ValueNotifier<VideoPlayerValue>
   }
 
   @override
-  int textureId;
+  late int textureId;
 
   @override
   String get dataSource => '';
   @override
   DataSourceType get dataSourceType => DataSourceType.file;
   @override
-  String get package => null;
+  String? get package => null;
   @override
   Future<Duration> get position async => value.position;
 
@@ -49,19 +49,25 @@ class FakeController extends ValueNotifier<VideoPlayerValue>
   }
 
   @override
-  VideoFormat get formatHint => null;
+  VideoFormat? get formatHint => null;
+
+  @override
+  Future<void> clip(int startMs, int endMs) async {}
+
+  @override
+  bool get isDisposed => false;
 }
 
 void main() {
   testWidgets('update texture', (WidgetTester tester) async {
     final FakeController controller = FakeController();
-    await tester.pumpWidget(VideoPlayer(controller));
     expect(find.byType(Texture), findsNothing);
 
     controller.textureId = 123;
     controller.value = controller.value.copyWith(
       duration: const Duration(milliseconds: 100),
     );
+    await tester.pumpWidget(VideoPlayer(controller));
 
     await tester.pump();
     expect(find.byType(Texture), findsOneWidget);
@@ -88,7 +94,7 @@ void main() {
   });
 
   group('VideoPlayerController', () {
-    FakeVideoPlayerPlatform fakeVideoPlayerPlatform;
+    late FakeVideoPlayerPlatform fakeVideoPlayerPlatform;
 
     setUp(() {
       fakeVideoPlayerPlatform = FakeVideoPlayerPlatform();
@@ -144,6 +150,21 @@ void main() {
       });
     });
   });
+
+  testWidgets('default playback speed', (WidgetTester tester) async {
+    final FakeController controller = FakeController();
+    controller.textureId = 101;
+    await tester.pumpWidget(VideoPlayer(controller));
+    expect(controller.value.speed, 1.0);
+  });
+
+  testWidgets('Changed playback speed', (WidgetTester tester) async {
+    final FakeController controller = FakeController();
+    controller.textureId = 101;
+    controller.setSpeed(1.5);
+    await tester.pumpWidget(VideoPlayer(controller));
+    expect(controller.value.speed, 1.5);
+  });
 }
 
 class FakeVideoPlayerPlatform {
@@ -172,7 +193,6 @@ class FakeVideoPlayerPlatform {
             'textureId': nextTextureId++,
           };
         });
-        break;
       case 'setLooping':
         break;
       case 'setVolume':
@@ -193,16 +213,16 @@ class FakeVideoEventStream {
         'flutter.io/videoPlayer/videoEvents$textureId', onListen);
   }
 
-  int textureId;
-  int width;
-  int height;
-  Duration duration;
-  FakeEventsChannel eventsChannel;
+  int? textureId;
+  int? width;
+  int? height;
+  Duration? duration;
+  late FakeEventsChannel eventsChannel;
 
   void onListen() {
     final Map<String, dynamic> initializedEvent = <String, dynamic>{
       'event': 'initialized',
-      'duration': duration.inMilliseconds,
+      'duration': duration?.inMilliseconds,
       'width': width,
       'height': height,
     };
@@ -216,7 +236,7 @@ class FakeEventsChannel {
     eventsMethodChannel.setMockMethodCallHandler(onMethodCall);
   }
 
-  MethodChannel eventsMethodChannel;
+  late MethodChannel eventsMethodChannel;
   VoidCallback onListen;
 
   Future<dynamic> onMethodCall(MethodCall call) {
@@ -229,24 +249,9 @@ class FakeEventsChannel {
   }
 
   void sendEvent(dynamic event) {
-    ServicesBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+    ServicesBinding.instance!.defaultBinaryMessenger.handlePlatformMessage(
         eventsMethodChannel.name,
         const StandardMethodCodec().encodeSuccessEnvelope(event),
-        (ByteData data) {});
+        (ByteData? data) {});
   }
-
-  testWidgets('default playback speed', (WidgetTester tester) async {
-    final FakeController controller = FakeController();
-    controller.textureId = 101;
-    await tester.pumpWidget(VideoPlayer(controller));
-    expect(controller.value.speed, 1.0);
-  });
-
-  testWidgets('Changed playback speed', (WidgetTester tester) async {
-    final FakeController controller = FakeController();
-    controller.textureId = 101;
-    controller.setSpeed(1.5);
-    await tester.pumpWidget(VideoPlayer(controller));
-    expect(controller.value.speed, 1.5);
-  });
 }

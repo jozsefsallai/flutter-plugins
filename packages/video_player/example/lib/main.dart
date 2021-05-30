@@ -34,7 +34,7 @@ class _VideoPlayPauseState extends State<VideoPlayPause> {
 
   FadeAnimation imageFadeAnim =
       FadeAnimation(child: const Icon(Icons.play_arrow, size: 100.0));
-  VoidCallback listener;
+  late VoidCallback listener;
 
   VideoPlayerController get controller => widget.controller;
 
@@ -98,7 +98,7 @@ class FadeAnimation extends StatefulWidget {
   FadeAnimation(
       {this.child, this.duration = const Duration(milliseconds: 500)});
 
-  final Widget child;
+  final Widget? child;
   final Duration duration;
 
   @override
@@ -107,7 +107,7 @@ class FadeAnimation extends StatefulWidget {
 
 class _FadeAnimationState extends State<FadeAnimation>
     with SingleTickerProviderStateMixin {
-  AnimationController animationController;
+  late AnimationController animationController;
 
   @override
   void initState() {
@@ -184,7 +184,7 @@ class AssetPlayerLifeCycle extends PlayerLifeCycle {
 }
 
 abstract class _PlayerLifeCycleState extends State<PlayerLifeCycle> {
-  VideoPlayerController controller;
+  late VideoPlayerController controller;
 
   @override
 
@@ -245,26 +245,6 @@ Widget buildCard(String title) {
         ListTile(
           leading: const Icon(Icons.airline_seat_flat_angled),
           title: Text(title),
-        ),
-        // TODO(jackson): Remove when deprecation is on stable branch
-        // ignore: deprecated_member_use
-        ButtonTheme.bar(
-          child: ButtonBar(
-            children: <Widget>[
-              FlatButton(
-                child: const Text('BUY TICKETS'),
-                onPressed: () {
-                  /* ... */
-                },
-              ),
-              FlatButton(
-                child: const Text('SELL TICKETS'),
-                onPressed: () {
-                  /* ... */
-                },
-              ),
-            ],
-          ),
         ),
       ],
     ),
@@ -328,7 +308,7 @@ class AspectRatioVideoState extends State<AspectRatioVideo> {
   VideoPlayerController get controller => widget.controller;
   bool initialized = false;
 
-  VoidCallback listener;
+  late VoidCallback listener;
 
   @override
   void initState() {
